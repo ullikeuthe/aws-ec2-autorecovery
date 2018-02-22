@@ -1,0 +1,100 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "v0.1 | DB Systel | Ulli Keuthe | add autorecovery and autoreboot to ec2 instances",
+    "Parameters": {
+        "InstanceId": {
+            "Description": "Id of the ec2 Instance e.g. i-0607a3926f327af5c",
+            "Type" : "String",
+        }
+    },
+    "Resources": {
+        "Ec2InstanceAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+               "MetricName": "StatusCheckFailed_Instance",
+               "Namespace": "AWS/EC2",
+               "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+               "EvaluationPeriods": "3",
+               "Period": "60",
+               "Statistic": "Minimum",
+               "Threshold": "1",
+               "ActionsEnabled": "true",
+               "AlarmActions": 
+               [
+                   {
+                    "Fn::Join": [
+                        ":",
+                        [ 
+                            "arn:aws:swf",
+                            { "Ref" : "AWS::Region" },
+                            { "Ref": "AWS::AccountId"},
+                            "action/actions/AWS_EC2.InstanceId.Reboot/1.0"
+                        ]
+                    ]
+                    }              
+               ],
+               "AlarmDescription": "ec2 Instance Failed",
+               "AlarmName": 
+                {
+                    "Fn::Join": [
+                        "-",
+                        [ 
+                            { "Ref" : "InstanceId" },
+                            "InstanceFailed-Alarm"
+                        ]
+                    ]
+                },
+                "Dimensions": [
+                    {
+                        "Name": "InstanceId",
+                        "Value": { "Ref" : "InstanceId" }
+                    }
+                ]
+            }
+        },
+        "Ec2SystemAlarm": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "Properties": {
+               "MetricName": "StatusCheckFailed_System",
+               "Namespace": "AWS/EC2",
+               "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+               "EvaluationPeriods": "3",
+               "Period": "60",
+               "Statistic": "Minimum",
+               "Threshold": "1",
+               "ActionsEnabled": "true",
+               "AlarmActions": 
+               [
+                   {
+                    "Fn::Join": [
+                        ":",
+                        [ 
+                            "arn:aws:automate",
+                            { "Ref" : "AWS::Region" },
+                            "ec2:recover"
+                        ]
+                    ]
+                    }              
+               ],
+               "AlarmDescription": "ec2 System Failed",
+               "AlarmName": 
+                {
+                    "Fn::Join": [
+                        "-",
+                        [ 
+                            { "Ref" : "InstanceId" },
+                            "SystemFailed-Alarm"
+                        ]
+                    ]
+                },
+               "Dimensions": [
+                    {
+                        "Name": "InstanceId",
+                        "Value": { "Ref" : "InstanceId" }
+                    }
+                ]
+            }
+        }
+    }    
+}
+    
